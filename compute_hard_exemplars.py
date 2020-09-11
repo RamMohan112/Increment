@@ -1,0 +1,54 @@
+#!/usr/bin/env python
+# coding=utf-8
+#!/usr/bin/env python
+# coding=utf-8
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+from torch.optim import lr_scheduler
+import torchvision
+from torchvision import datasets, models, transforms
+from torch.autograd import Variable
+import numpy as np
+import time
+import os
+import copy
+import argparse
+from PIL import Image
+from scipy.spatial.distance import cdist
+from sklearn.metrics import confusion_matrix
+from utils_pytorch import *
+
+def compute_exemplars(tg_model, evalloader, num_samples, num_outputs, alpha_dr_herding_2, nb_protos_cl, device=None):
+    
+    if device is None:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    tg_model.eval()
+
+
+    #features = np.zeros([num_samples, num_features])
+    
+    output_prob = np.zeros([num_samples, num_outputs])
+    
+
+
+    start_idx = 0
+
+    with torch.no_grad():
+        for inputs, targets in evalloader:
+            inputs, targets = inputs.to(device), targets.to(device)
+
+            outputs = tg_model(inputs)
+            outputs = F.softmax(outputs, dim=1)
+
+            print(f'Check outputs Size = {outputs.shape} to see if there is any (1, ) in its shape for np.squeeze')
+            output_prob[start_idx:start_idx+inputs.shape[0], :] = np.squeeze(outputs)
+
+            _, predicted = outputs.max(1)
+
+            start_idx = start_idx+inputs.shape[0]
+    
+
+    assert(start_idx==num_samples)
+    return features
